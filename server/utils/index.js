@@ -1,16 +1,15 @@
 import jwt from "jsonwebtoken";
 
-const createJWT = (res, userId) => {
+// Generates token and sets it as an HTTP-only cookie (valid for 7 days)
+export const generateTokenAndSetCookie = (res, userId) => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
+    expiresIn: "7d", // ✅ JWT valid for 7 days
   });
 
   res.cookie("token", token, {
     httpOnly: true,
-    secure: true , // Use secure cookies in production
-    sameSite: "none", // Prevent CSRF attacks
-    maxAge: 1 * 24 * 60 * 60 * 1000, // 1 days
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "None", // use 'None' if your frontend is hosted separately and over HTTPS
+    maxAge: 7 * 24 * 60 * 60 * 1000, // ✅ Cookie valid for 7 days
   });
 };
-
-export default createJWT;
