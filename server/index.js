@@ -1,29 +1,29 @@
-import cookieParser from "cookie-parser";
+import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import express from "express";
-import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import { errorHandler, routeNotFound } from "./middleware/errorMiddleware.js";
-import routes from "./routes/index.js";
 import dbConnection from "./utils/connectDB.js";
 import userRoutes from "./routes/userRoute.js";
+import routes from "./routes/index.js";
 
 dotenv.config();
 dbConnection();
 
+const app = express();
 const port = process.env.PORT || 8800;
 
-const app = express();
-
-// ✅ Only allow localhost and *.render.com domains
+// ✅ CORS: Allow localhost and *.render.com domains with credentials
 app.use(
   cors({
     origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // Allow Postman / non-browser requests
+
       const isLocalhost =
         origin === "http://localhost:3000" || origin === "http://localhost:3001";
-      const isRenderDomain = origin?.match(/\.render\.com$/);
+      const isRenderDomain = /\.render\.com$/.test(origin);
 
-      if (!origin || isLocalhost || isRenderDomain) {
+      if (isLocalhost || isRenderDomain) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -46,4 +46,6 @@ app.use("/api", routes);
 app.use(routeNotFound);
 app.use(errorHandler);
 
-app.listen(port, () => console.log(`Server listening on ${port}`));
+app.listen(port, () => {
+  console.log(`✅ Server running at http://localhost:${port}`);
+});
