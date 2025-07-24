@@ -13,26 +13,17 @@ dbConnection();
 const app = express();
 const port = process.env.PORT || 8800;
 
-// ✅ CORS: Allow localhost and *.render.com domains with credentials
+// ✅ CORS: Allow all origins (reflect origin) with credentials
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Allow Postman / non-browser requests
-
-      const isLocalhost =
-        origin === "http://localhost:3000" || origin === "http://localhost:3001";
-      const isRenderDomain = /\.render\.com$/.test(origin);
-
-      if (isLocalhost || isRenderDomain) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "DELETE", "PUT"],
+    origin: true, // Dynamically reflect request origin
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
+
+// ✅ Allow preflight across all routes
+app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
