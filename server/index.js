@@ -9,16 +9,26 @@ import dbConnection from "./utils/connectDB.js";
 import userRoutes from "./routes/userRoute.js";
 
 dotenv.config();
-
 dbConnection();
 
 const port = process.env.PORT || 8800;
 
 const app = express();
 
+// ✅ Only allow localhost and *.render.com domains
 app.use(
   cors({
-    origin: ["https://mern-task-manager-app.netlify.app", "http://localhost:3000", "http://localhost:3001"],
+    origin: (origin, callback) => {
+      const isLocalhost =
+        origin === "http://localhost:3000" || origin === "http://localhost:3001";
+      const isRenderDomain = origin?.match(/\.render\.com$/);
+
+      if (!origin || isLocalhost || isRenderDomain) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   })
@@ -26,12 +36,13 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
+
+// Routes
 app.use("/api/user", userRoutes);
-//app.use(morgan("dev"));
 app.use("/api", routes);
 
+// Error Handling
 app.use(routeNotFound);
 app.use(errorHandler);
 
