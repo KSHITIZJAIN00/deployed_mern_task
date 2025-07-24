@@ -2,19 +2,7 @@ import asyncHandler from "express-async-handler";
 import jwt from "jsonwebtoken";
 import Notice from "../models/notis.js";
 import User from "../models/userModel.js";
-
-// Helper function to generate JWT and set it as an HTTP-only cookie
-const generateTokenAndSetCookie = (res, userId) => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
-  });
-
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-  });
-};
+import { generateTokenAndSetCookie } from "../utils/index.js";
 
 // POST request - login user
 const loginUser = asyncHandler(async (req, res) => {
@@ -24,25 +12,19 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    console.log("❌ User not found for email:", email);
     return res.status(401).json({ message: "Invalid email or password" });
   }
 
   if (!user.isActive) {
-    console.log("❌ Account Deactivated for:", email);
     return res.status(401).json({ message: "User account is deactivated" });
   }
 
-  console.log("🔹 Checking Password...");
   const isMatch = await user.matchPassword(password);
-  console.log("🔹 Password Match:", isMatch);
 
   if (!isMatch) {
-    console.log("❌ Incorrect Password for:", email);
     return res.status(401).json({ message: "Invalid email or password" });
   }
 
-  console.log("✅ Login Successful for:", email);
   generateTokenAndSetCookie(res, user._id);
   res.json({
     message: "Login successful",
@@ -55,9 +37,7 @@ const loginUser = asyncHandler(async (req, res) => {
       title: user.title,
     },
   });
-  
 });
-
 
 // POST - Register a new user
 const registerUser = asyncHandler(async (req, res) => {
@@ -84,7 +64,7 @@ const registerUser = asyncHandler(async (req, res) => {
     if (isAdmin) generateTokenAndSetCookie(res, user._id);
     res.status(201).json({ status: true, message: "User registered successfully" });
   } else {
-    return res.status(400).json({ status: false, message: "Invalid user data" });
+    res.status(400).json({ status: false, message: "Invalid user data" });
   }
 });
 
@@ -96,6 +76,8 @@ const logoutUser = (req, res) => {
   });
   res.status(200).json({ status: true, message: "Logged out successfully" });
 };
+
+// GET - Get task status for each user
 const getUserTaskStatus = asyncHandler(async (req, res) => {
   const tasks = await User.find()
     .populate("tasks", "title stage")
@@ -104,7 +86,7 @@ const getUserTaskStatus = asyncHandler(async (req, res) => {
   res.status(200).json(tasks);
 });
 
-// GET - Get team list with search functionality
+// GET - Get team list with optional search
 const getTeamList = asyncHandler(async (req, res) => {
   const { search } = req.query;
   let query = {};
@@ -122,7 +104,7 @@ const getTeamList = asyncHandler(async (req, res) => {
   res.status(200).json(users);
 });
 
-// GET - Get user notifications
+// GET - Get notifications for a user
 const getNotificationsList = asyncHandler(async (req, res) => {
   const { userId } = req.user;
 
@@ -156,7 +138,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   res.status(200).json({ status: true, message: "Profile Updated Successfully." });
 });
 
-// PUT - Activate/deactivate user profile
+// PUT - Activate/deactivate a user
 const activateUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { isActive } = req.body;
@@ -191,7 +173,7 @@ const changeUserPassword = asyncHandler(async (req, res) => {
   res.status(200).json({ status: true, message: "Password changed successfully." });
 });
 
-// DELETE - Delete user account
+// DELETE - Delete a user
 const deleteUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -230,7 +212,7 @@ export {
   changeUserPassword,
   deleteUserProfile,
   getNotificationsList,
-  getUserTaskStatus, 
+  getUserTaskStatus,
   getTeamList,
   loginUser,
   logoutUser,
